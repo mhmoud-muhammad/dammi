@@ -1,0 +1,83 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    // يُمنح المدير الصلاحية عبر Custom Claim: { admin: true }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+    function validBloodType(t) { return t in ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']; }
+    function requestDoc(rid) { return get(/databases/$(database)/documents/requests/$(rid)).data; }
+    function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
+
+    // ---------- المستخدمون ----------
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.name is string && request.resource.data.name.size() >= 3
+        && validBloodType(request.resource.data.bloodType)
+        && request.resource.data.phone == request.auth.token.phone_number
+        && request.resource.data.isAvailable is bool;
+      allow update: if (signedIn() && request.auth.uid == uid
+          && request.resource.data.phone == resource.data.phone
+          && validBloodType(request.resource.data.bloodType))
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ---------- المستشفيات (يديرها الأدمن فقط) ----------
+    match /hospitals/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // ---------- الطلبات ----------
+    match /requests/{rid} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.status == 'active'
+        && request.resource.data.respondersCount == 0
+        && validBloodType(request.resource.data.bloodType)
+        && request.resource.data.scope in ['exact', 'compatible']
+        && request.resource.data.acceptedTypes is list
+        && request.resource.data.acceptedTypes.size() >= 1
+        && request.resource.data.units is int
+        && request.resource.data.units >= 1 && request.resource.data.units <= 20
+        && request.resource.data.patientName is string
+        && exists(/databases/$(database)/documents/hospitals/$(request.resource.data.hospitalId));
+
+      allow update: if isAdmin()
+        // صاحب الطلب يغلقه فقط
+        || (signedIn() && resource.data.requesterId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'completedAt'])
+            && request.resource.data.status == 'completed')
+        // المتبرع يزيد العداد بواحد في نفس معاملة تسجيل استجابته
+        || (signedIn() && resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['respondersCount'])
+            && request.resource.data.respondersCount == resource.data.respondersCount + 1
+            && !exists(/databases/$(database)/documents/requests/$(rid)/responders/$(request.auth.uid))
+            && existsAfter(/databases/$(database)/documents/requests/$(rid)/responders/$(request.auth.uid)));
+
+      allow delete: if isAdmin();
+
+      // ---------- المستجيبون ----------
+      match /responders/{uid} {
+        // بيانات المتبرع تظهر لطالب الدم وللمتبرع نفسه وللأدمن فقط
+        allow read: if signedIn()
+          && (request.auth.uid == uid || requestDoc(rid).requesterId == request.auth.uid || isAdmin());
+
+        allow create: if signedIn() && request.auth.uid == uid
+          && requestDoc(rid).status == 'active'
+          && requestDoc(rid).requesterId != request.auth.uid
+          && request.resource.data.bloodType == userDoc(uid).bloodType
+          && request.resource.data.phone == userDoc(uid).phone
+          && requestDoc(rid).acceptedTypes.hasAny([request.resource.data.bloodType]);
+
+        allow update: if false;
+        allow delete: if isAdmin();
+      }
+    }
+  }
+}

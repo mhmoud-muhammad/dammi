@@ -1,0 +1,17 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+.DS_Store
+
+# Firebase config generated per developer (run `flutterfire configure`)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+.firebase/
