@@ -15,3 +15,8 @@ build/
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 .firebase/
+
+# Admin scripts
+node_modules/
+service-account*.json
+*-firebase-adminsdk-*.json

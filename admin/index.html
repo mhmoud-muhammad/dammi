@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>لوحة إدارة التبرع بالدم</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- ============ تسجيل الدخول ============ -->
+  <section id="login-view" class="login" hidden>
+    <form id="login-form" class="login-card" novalidate>
+      <div class="brand-mark" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 2.5C9 7 6 10.2 6 14a6 6 0 0 0 12 0c0-3.8-3-7-6-11.5z" fill="currentColor"/></svg>
+      </div>
+      <h1>دخول مدير النظام</h1>
+      <p class="muted">هذه الصفحة مخصصة للمسؤولين فقط.</p>
+      <label for="login-email">البريد الإلكتروني</label>
+      <input id="login-email" type="email" autocomplete="username" dir="ltr" required>
+      <label for="login-password">كلمة المرور</label>
+      <input id="login-password" type="password" autocomplete="current-password" dir="ltr" required>
+      <p id="login-error" class="error" role="alert" hidden></p>
+      <button id="login-submit" type="submit" class="btn btn-primary btn-block">دخول</button>
+    </form>
+  </section>
+
+  <!-- ============ اللوحة ============ -->
+  <div id="app-view" class="layout" hidden>
+    <nav class="sidebar" aria-label="القائمة">
+      <div class="sidebar-brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5C9 7 6 10.2 6 14a6 6 0 0 0 12 0c0-3.8-3-7-6-11.5z" fill="currentColor"/></svg>
+        <strong>إدارة التبرع بالدم</strong>
+      </div>
+      <a href="#stats" class="nav-link">الإحصاءات</a>
+      <a href="#requests" class="nav-link">الطلبات</a>
+      <a href="#hospitals" class="nav-link">المستشفيات</a>
+      <div class="sidebar-foot">
+        <span id="admin-email" dir="ltr"></span>
+        <button id="logout" type="button" class="link-btn">تسجيل الخروج</button>
+      </div>
+    </nav>
+
+    <main class="content">
+      <header class="page-head">
+        <div>
+          <h1>لوحة التحكم</h1>
+          <p class="muted">بيانات مباشرة من Cloud Firestore</p>
+        </div>
+        <button id="refresh-stats" type="button" class="btn">تحديث الإحصاءات</button>
+      </header>
+
+      <section id="stats" class="stats" aria-label="الإحصاءات">
+        <div class="stat"><span>إجمالي المستخدمين</span><strong id="stat-users">—</strong></div>
+        <div class="stat"><span>متبرعون متاحون الآن</span><strong id="stat-available" class="ok">—</strong></div>
+        <div class="stat"><span>طلبات نشطة</span><strong id="stat-active" class="accent">—</strong></div>
+        <div class="stat"><span>طلبات مكتملة</span><strong id="stat-completed">—</strong></div>
+      </section>
+
+      <section id="requests" class="card" aria-labelledby="requests-title">
+        <div class="card-head">
+          <h2 id="requests-title">كل الطلبات</h2>
+          <div class="filters">
+            <label for="req-search" class="sr-only">بحث</label>
+            <input id="req-search" type="search" placeholder="بحث باسم المريض أو المستشفى أو الهاتف">
+            <label for="req-status" class="sr-only">الحالة</label>
+            <select id="req-status">
+              <option value="all">كل الحالات</option>
+              <option value="active">نشط</option>
+              <option value="completed">مكتمل</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">المريض</th>
+                <th scope="col">المستشفى</th>
+                <th scope="col">الفصيلة</th>
+                <th scope="col">النطاق</th>
+                <th scope="col">المستجيبون</th>
+                <th scope="col">طالب الدم</th>
+                <th scope="col">التاريخ</th>
+                <th scope="col">الحالة</th>
+                <th scope="col">إجراء</th>
+              </tr>
+            </thead>
+            <tbody id="requests-body"></tbody>
+          </table>
+        </div>
+        <p id="requests-empty" class="muted empty" hidden>لا توجد طلبات مطابقة.</p>
+        <p class="muted small">يعرض آخر ٢٠٠ طلب.</p>
+      </section>
+
+      <section id="hospitals" class="card" aria-labelledby="hospitals-title">
+        <div class="card-head column">
+          <h2 id="hospitals-title">المستشفيات والمراكز المعتمدة</h2>
+          <p class="muted">ما يُضاف أو يُفعَّل هنا يظهر فوراً في القائمة المنسدلة بشاشة إنشاء الطلب في التطبيق.</p>
+        </div>
+        <form id="hospital-form" class="hospital-form">
+          <div class="field grow">
+            <label for="h-name">اسم المستشفى</label>
+            <input id="h-name" type="text" required minlength="3">
+          </div>
+          <div class="field">
+            <label for="h-city">المدينة</label>
+            <select id="h-city"></select>
+          </div>
+          <button type="submit" class="btn btn-primary">إضافة</button>
+        </form>
+        <ul id="hospitals-list" class="hospital-list"></ul>
+        <p id="hospitals-empty" class="muted empty" hidden>لم تُضف أي مستشفيات بعد.</p>
+      </section>
+    </main>
+  </div>
+
+  <div id="loading" class="loading" role="status">جارٍ التحميل…</div>
+
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <h3 id="confirm-title"></h3>
+      <p id="confirm-body" class="muted"></p>
+      <div class="dialog-actions">
+        <button value="cancel" class="btn">إلغاء</button>
+        <button value="ok" id="confirm-ok" class="btn btn-danger">تأكيد</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

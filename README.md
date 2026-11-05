@@ -110,3 +110,46 @@ flutter test
 ## الخطوة التالية
 
 لوحة الإدارة على الويب (Firebase Hosting): الإحصاءات، مراقبة الطلبات وحذفها، وإدارة المستشفيات.
+
+## لوحة الإدارة (ويب)
+
+موجودة في مجلد `admin/`، وهي صفحة HTML/JavaScript ثابتة تستخدم Firebase JS SDK وتُستضاف على
+Firebase Hosting. تحتوي على:
+
+- **الإحصاءات:** إجمالي المستخدمين، المتبرعون المتاحون، الطلبات النشطة والمكتملة.
+- **الطلبات:** جدول بآخر ٢٠٠ طلب مع بحث وتصفية حسب الحالة، وإمكانية إغلاق أي طلب أو حذفه.
+  الحذف يشمل المستجيبين له.
+- **المستشفيات:** إضافة مستشفى، تعديل اسمه، وإيقافه أو تفعيله. التغيير ينعكس فوراً على القائمة
+  المنسدلة في التطبيق.
+
+### الإعداد
+
+1. في Firebase Console ← **Project settings ← Your apps** أضف تطبيق **Web**، وانسخ قيم
+   `firebaseConfig` إلى `admin/config.js`.
+2. في **Authentication ← Sign-in method** فعّل **Email/Password**.
+3. في **Authentication ← Users** اضغط **Add user** وأنشئ حساب المدير.
+4. امنح الحساب صلاحية الإدارة. نزّل مفتاح Service account من **Project settings ← Service accounts**
+   واحفظه خارج المستودع، ثم:
+
+```bash
+cd scripts && npm install
+```
+
+```bash
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json node set-admin.mjs admin@example.com
+```
+
+5. انشر اللوحة مع القواعد:
+
+```bash
+firebase deploy --only hosting,firestore:rules,firestore:indexes
+```
+
+ستعمل اللوحة على `https://<PROJECT_ID>.web.app`. لتجربتها محلياً:
+
+```bash
+firebase serve --only hosting
+```
+
+أي حساب لا يملك `admin: true` يُسجَّل خروجه تلقائياً، وقواعد Firestore ترفض عمليات الإدارة له
+حتى لو تجاوز الواجهة.
