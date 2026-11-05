@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
-/// التحقق برقم الهاتف عبر Firebase Auth (OTP).
+/// تسجيل الدخول بالبريد وكلمة المرور، أو بحساب Google.
 class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
@@ -10,54 +10,59 @@ class AuthService {
   Stream<User?> authChanges() => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
 
-  Future<void> sendCode({
-    required String phoneNumber,
-    required void Function(String verificationId, int? resendToken) onCodeSent,
-    required void Function(String message) onError,
-    required void Function() onAutoVerified,
-    int? resendToken,
-  }) {
-    return _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      forceResendingToken: resendToken,
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (credential) async {
-        // أندرويد قد يقرأ الرمز تلقائياً.
-        try {
-          await _auth.signInWithCredential(credential);
-          onAutoVerified();
-        } on FirebaseAuthException catch (e) {
-          onError(messageFor(e));
-        }
-      },
-      verificationFailed: (e) => onError(messageFor(e)),
-      codeSent: onCodeSent,
-      codeAutoRetrievalTimeout: (_) {},
+  Future<void> signInWithEmail({required String email, required String password}) =>
+      _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
+
+  Future<void> registerWithEmail({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    final cred = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password,
     );
+    if (displayName != null && displayName.trim().isNotEmpty) {
+      await cred.user?.updateDisplayName(displayName.trim());
+    }
   }
 
-  Future<void> verifyCode({required String verificationId, required String smsCode}) async {
-    final credential = PhoneAuthProvider.credential(
-      verificationId: verificationId,
-      smsCode: smsCode,
-    );
-    await _auth.signInWithCredential(credential);
+  /// يفتح صفحة اختيار حساب Google (يتطلب بصمة SHA-1 مسجلة على أندرويد).
+  Future<void> signInWithGoogle() async {
+    final provider = GoogleAuthProvider()..setCustomParameters({'prompt': 'select_account'});
+    await _auth.signInWithProvider(provider);
   }
+
+  Future<void> sendPasswordReset(String email) =>
+      _auth.sendPasswordResetEmail(email: email.trim());
 
   Future<void> signOut() => _auth.signOut();
 
   static String messageFor(FirebaseAuthException e) {
     switch (e.code) {
-      case 'invalid-phone-number':
-        return 'رقم الهاتف غير صحيح.';
-      case 'invalid-verification-code':
-        return 'رمز التحقق غير صحيح.';
-      case 'session-expired':
-        return 'انتهت صلاحية الرمز، اطلب رمزاً جديداً.';
+      case 'invalid-email':
+        return 'البريد الإلكتروني غير صحيح.';
+      case 'user-disabled':
+        return 'تم إيقاف هذا الحساب.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'البريد أو كلمة المرور غير صحيحة.';
+      case 'email-already-in-use':
+        return 'هذا البريد مسجل مسبقاً، سجّل الدخول بدلاً من ذلك.';
+      case 'weak-password':
+        return 'كلمة المرور ضعيفة، استخدم ٦ أحرف على الأقل.';
+      case 'account-exists-with-different-credential':
+        return 'هذا البريد مسجل بطريقة دخول أخرى. سجّل الدخول بالبريد وكلمة المرور.';
+      case 'web-context-canceled':
+      case 'canceled':
+        return 'تم إلغاء تسجيل الدخول.';
       case 'too-many-requests':
         return 'محاولات كثيرة، حاول لاحقاً.';
       case 'network-request-failed':
         return 'تحقق من اتصال الإنترنت.';
+      case 'operation-not-allowed':
+        return 'طريقة الدخول هذه غير مفعّلة في Firebase.';
       default:
         return e.message ?? 'حدث خطأ غير متوقع.';
     }
