@@ -216,7 +216,7 @@ class _AvailabilityTile extends StatelessWidget {
           ),
           Switch(
             value: on,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: AppColors.success,
             onChanged: (v) => FirestoreService.instance.setAvailability(user.uid, v),
           ),

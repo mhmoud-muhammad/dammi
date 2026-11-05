@@ -133,7 +133,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       children: [
                         const FieldLabel('المدينة'),
                         DropdownButtonFormField<String>(
-                          value: _city,
+                          initialValue: _city,
                           items: [
                             for (final c in kCities) DropdownMenuItem(value: c, child: Text(c)),
                           ],

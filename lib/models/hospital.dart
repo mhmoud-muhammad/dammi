@@ -9,6 +9,13 @@ class Hospital {
 
   const Hospital({required this.id, required this.name, required this.city, this.order = 0});
 
+  // المقارنة بالمعرّف: كل تحديث من Firestore ينشئ كائنات جديدة لنفس المستشفى.
+  @override
+  bool operator ==(Object other) => other is Hospital && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+
   factory Hospital.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final d = doc.data() ?? const {};
     return Hospital(

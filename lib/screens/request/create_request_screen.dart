@@ -178,12 +178,9 @@ class _HospitalDropdown extends StatelessWidget {
       stream: stream,
       builder: (context, snap) {
         final hospitals = snap.data ?? const <Hospital>[];
-        // نطابق بالمعرّف لأن الكائنات تتجدد مع كل تحديث للقائمة.
-        final selected = value == null
-            ? null
-            : hospitals.where((h) => h.id == value!.id).firstOrNull;
+        // Hospital يقارن بالمعرّف، فيبقى الاختيار صالحاً عند تحديث القائمة.
         return DropdownButtonFormField<Hospital>(
-          value: selected,
+          initialValue: value,
           isExpanded: true,
           hint: Text(snap.hasData
               ? (hospitals.isEmpty ? 'لا توجد مستشفيات مضافة بعد' : 'اختر المستشفى')
