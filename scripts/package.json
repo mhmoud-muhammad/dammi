@@ -1,0 +1,11 @@
+{
+  "name": "dammi-admin-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "set-admin": "node set-admin.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
