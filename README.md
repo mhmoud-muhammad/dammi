@@ -7,7 +7,7 @@
 
 | # | الشاشة | الملف |
 |---|--------|-------|
-| ١ | التسجيل برقم الهاتف (OTP) ثم إكمال الملف | `lib/screens/auth/` |
+| ١ | الدخول بالبريد وكلمة المرور أو بحساب Google، ثم إكمال الملف (الاسم، الهاتف، الفصيلة، المنطقة) | `lib/screens/auth/` |
 | ٢ | الرئيسية: طلبات تناسب فصيلتي / طلباتي + مفتاح التوفر + زر «طلب دم طارئ» | `lib/screens/home/home_screen.dart` |
 | ٣ | إنشاء طلب مع نطاق البحث الذكي | `lib/screens/request/create_request_screen.dart` |
 | ٤أ | تفاصيل الطلب للمتبرع + «أنا قادم» | `lib/screens/request/request_details_screen.dart` |
@@ -59,8 +59,9 @@ flutterfire configure
 ```
 
 في Firebase Console:
-1. **Authentication → Sign-in method:** فعّل **Phone**. على أندرويد أضف بصمة SHA-1 وSHA-256
-   للتطبيق في إعدادات المشروع.
+1. **Authentication → Sign-in method:** فعّل **Email/Password** و**Google**. تسجيل Google على
+   أندرويد يحتاج بصمتي SHA-1 وSHA-256 للتطبيق في إعدادات المشروع (Your apps ← Android ←
+   Add fingerprint).
 2. **Firestore Database:** أنشئ قاعدة البيانات.
 
 انشر القواعد والفهارس:
@@ -99,7 +100,7 @@ flutter test
 
 ## الأمان (firestore.rules)
 
-- المستخدم يقرأ ويعدّل ملفه فقط، ولا يستطيع تغيير رقم هاتفه المُتحقق منه.
+- المستخدم يقرأ ويعدّل ملفه فقط، ورقم الهاتف يجب أن يكون بصيغة `+249` متبوعاً بـ ٩ أرقام.
 - المستشفيات للقراءة فقط، والكتابة للأدمن وحده.
 - الطلب يغلقه صاحبه فقط. العداد `respondersCount` يزيد بواحد فقط، وفي نفس المعاملة التي يُنشأ فيها
   مستند المستجيب.

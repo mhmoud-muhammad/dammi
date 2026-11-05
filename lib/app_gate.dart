@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'models/app_user.dart';
-import 'screens/auth/phone_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'screens/auth/profile_setup_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'services/auth_service.dart';
@@ -20,7 +20,7 @@ class AppGate extends StatelessWidget {
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) return const LoadingView();
         final user = snap.data;
-        if (user == null) return const PhoneScreen();
+        if (user == null) return const LoginScreen();
         return _ProfileGate(key: ValueKey(user.uid), authUser: user);
       },
     );
@@ -60,7 +60,8 @@ class _ProfileGateState extends State<_ProfileGate> {
         if (profile == null) {
           return ProfileSetupScreen(
             uid: widget.authUser.uid,
-            phone: widget.authUser.phoneNumber ?? '',
+            initialName: widget.authUser.displayName ?? '',
+            email: widget.authUser.email ?? '',
           );
         }
         return HomeScreen(user: profile);

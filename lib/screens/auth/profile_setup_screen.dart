@@ -5,15 +5,22 @@ import '../../core/theme.dart';
 import '../../models/app_user.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/formatters.dart';
 import '../../widgets/blood_type_selector.dart';
 import '../../widgets/common.dart';
 
-/// شاشة ١ (الجزء الأخير): البيانات الأساسية — تُحفظ مرة واحدة في users/{uid}.
+/// إكمال الملف بعد أول تسجيل دخول — يُحفظ مرة واحدة في users/{uid}.
 class ProfileSetupScreen extends StatefulWidget {
   final String uid;
-  final String phone;
+  final String initialName;
+  final String email;
 
-  const ProfileSetupScreen({super.key, required this.uid, required this.phone});
+  const ProfileSetupScreen({
+    super.key,
+    required this.uid,
+    this.initialName = '',
+    this.email = '',
+  });
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -21,7 +28,8 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
+  late final TextEditingController _name = TextEditingController(text: widget.initialName);
+  final _phone = TextEditingController();
   final _area = TextEditingController();
   String? _bloodType;
   String _city = kCities.first;
@@ -30,6 +38,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _phone.dispose();
     _area.dispose();
     super.dispose();
   }
@@ -45,7 +54,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       await FirestoreService.instance.createUser(AppUser(
         uid: widget.uid,
         name: _name.text.trim(),
-        phone: widget.phone,
+        phone: normalizePhone(_phone.text),
         bloodType: _bloodType!,
         city: _city,
         area: _area.text.trim(),
@@ -67,7 +76,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         actions: [
           TextButton(
             onPressed: () => AuthService.instance.signOut(),
-            child: const Text('تغيير الرقم'),
+            child: const Text('تسجيل الخروج'),
           ),
         ],
       ),
@@ -77,6 +86,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              if (widget.email.isNotEmpty) ...[
+                Text('مسجل باسم ${widget.email}',
+                    style: const TextStyle(fontSize: 14, color: AppColors.muted)),
+                const SizedBox(height: 16),
+              ],
               const FieldLabel('الاسم الكامل'),
               TextFormField(
                 controller: _name,
@@ -87,18 +101,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
               const SizedBox(height: 16),
               const FieldLabel('رقم الهاتف'),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.fieldBorder),
+              Directionality(
+                textDirection: TextDirection.ltr,
+                child: TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  autofillHints: const [AutofillHints.telephoneNumberNational],
+                  textInputAction: TextInputAction.next,
+                  decoration: const InputDecoration(
+                    prefixText: '$kCountryCode  ',
+                    hintText: '9X XXX XXXX',
+                  ),
+                  validator: (v) =>
+                      isValidLocalPhone(v ?? '') ? null : 'أدخل رقماً صحيحاً من ٩ أرقام',
                 ),
-                child: Text(widget.phone,
-                    textDirection: TextDirection.ltr,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontSize: 16, color: AppColors.muted)),
               ),
+              const HelperText('يظهر لطالب الدم عندما تقبل طلبه، وللمتبرعين عندما تنشئ طلباً.'),
               const SizedBox(height: 16),
               const FieldLabel('فصيلة الدم'),
               BloodTypeSelector(

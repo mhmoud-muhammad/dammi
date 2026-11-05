@@ -7,6 +7,7 @@ service cloud.firestore {
     // يُمنح المدير الصلاحية عبر Custom Claim: { admin: true }
     function isAdmin() { return signedIn() && request.auth.token.admin == true; }
     function validBloodType(t) { return t in ['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-']; }
+    function validPhone(p) { return p is string && p.matches('^\\+249[0-9]{9}$'); }
     function requestDoc(rid) { return get(/databases/$(database)/documents/requests/$(rid)).data; }
     function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)).data; }
 
@@ -16,10 +17,10 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.name is string && request.resource.data.name.size() >= 3
         && validBloodType(request.resource.data.bloodType)
-        && request.resource.data.phone == request.auth.token.phone_number
+        && validPhone(request.resource.data.phone)
         && request.resource.data.isAvailable is bool;
       allow update: if (signedIn() && request.auth.uid == uid
-          && request.resource.data.phone == resource.data.phone
+          && validPhone(request.resource.data.phone)
           && validBloodType(request.resource.data.bloodType))
         || isAdmin();
       allow delete: if isAdmin();
